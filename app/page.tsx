@@ -15,10 +15,9 @@ type Job = {
 }
 
 const companies = {
-  Intellihome: ['Cody', 'Jordan', 'Colby', 'Darrius', 'Chip', Tanner'],
+  Intellihome: ['Cody', 'Jordan', 'Colby', 'Darrius', 'Chip', 'Tanner'],
   'Crabtree Custom Electric, LLC': ['Logan', 'Malachi', 'Tanner'],
 }
-
 export default function Home() {
   const [view, setView] = useState<'add' | 'jobs'>('add')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
