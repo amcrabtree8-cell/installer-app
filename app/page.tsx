@@ -128,17 +128,16 @@ export default function Home() {
       ? jobs.map((job) => (job.id === editingId ? newJob : job))
       : [newJob, ...jobs]
 
-  saveJobs(updated)
+    saveJobs(updated)
 
-const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project - we truly appreciate it! Let me know if you need anything at all.`
+    const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project - we truly appreciate it! Let me know if you need anything at all.`
+    const smsLink = `sms:${cleanPhone(phone)}?body=${encodeURIComponent(message)}`
 
-const smsLink = `sms:${cleanPhone(phone)}?body=${encodeURIComponent(message)}`
+    clearForm()
+    setView('jobs')
+    window.location.href = smsLink
+  }
 
-clearForm()
-setView('jobs')
-window.location.href = smsLink
-}
-  
   const deleteJob = (id: string) => {
     const updated = jobs.filter((job) => job.id !== id)
     saveJobs(updated)
@@ -164,26 +163,34 @@ window.location.href = smsLink
     window.location.href = `tel:${cleanPhone(selectedJob.phone)}`
   }
 
-     const body =
+  const sendThankYou = () => {
+    if (!selectedJob) return
+
+    const message =
       selectedJob.jobType === 'Sales Call'
         ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
         : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed in your home. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
 
- 
-const askForReview = () => {
-  if (!selectedJob) return
-
-  const reviewLinks: Record<string, string> = {
-    Intellihome: 'https://g.page/r/Cfa0Ouenna50EBM/review',
-    'Crabtree Custom Electric, LLC': 'https://g.page/r/CTJGBytOBuuyEBM/review',
+    window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
   }
 
-  const reviewLink = reviewLinks[selectedJob.company] || ''
+  const askForReview = () => {
+    if (!selectedJob) return
 
-  const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we’d really appreciate a quick review: ${reviewLink}`
+    const reviewLinks: Record<string, string> = {
+      Intellihome: 'https://g.page/r/Cfa0Ouenna50EBM/review',
+      'Crabtree Custom Electric, LLC': 'https://g.page/r/CTJGBytOBuuyEBM/review',
+    }
 
-  window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
-}
+    const reviewLink = reviewLinks[selectedJob.company] || ''
+
+    const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we’d really appreciate a quick review: ${reviewLink}`
+
+    window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
+  }
+
+  const jobComplete = () => {
+    if (!selectedJob) return
 
     const message = `${selectedJob.installer} completed ${selectedJob.jobType || 'job'} for ${selectedJob.name} at ${selectedJob.address}.`
 
@@ -275,7 +282,6 @@ const askForReview = () => {
             onChange={(e) => handlePhoneChange(e.target.value)}
           />
 
-    
           <input
             placeholder="Address *"
             value={address}
@@ -284,7 +290,6 @@ const askForReview = () => {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={saveJob}>{editingId ? 'Update Job' : 'Save Job'}</button>
-
             {editingId && <button onClick={clearForm}>Cancel Edit</button>}
           </div>
         </div>
@@ -354,4 +359,4 @@ const askForReview = () => {
       )}
     </main>
   )
-
+}
