@@ -128,7 +128,7 @@ export default function Home() {
       ? jobs.map((job) => (job.id === editingId ? newJob : job))
       : [newJob, ...jobs]
 
-   saveJobs(updated)
+  saveJobs(updated)
 
 const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project - we truly appreciate it! Let me know if you need anything at all.`
 
@@ -169,14 +169,7 @@ window.location.href = smsLink
         ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
         : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed in your home. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
 
-  const askForReview = () => {
-    if (!selectedJob) return
-
-    const message = `Hi ${selectedJob.name}, thank you again for trusting us with your project. If you were happy with your experience, we’d really appreciate a quick review. It would mean a lot to us.`
-
-    window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
-  }
-
+ 
 const askForReview = () => {
   if (!selectedJob) return
 
