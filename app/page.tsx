@@ -332,7 +332,6 @@ const askForReview = () => {
           <h2 style={{ marginBottom: 0 }}>{selectedJob.name}</h2>
           <p style={{ margin: 0 }}>{selectedJob.address}</p>
           <p style={{ margin: 0 }}>{selectedJob.phone}</p>
-          {selectedJob.email && <p style={{ margin: 0 }}>{selectedJob.email}</p>}
           <p style={{ margin: 0 }}>
             {selectedJob.company} • {selectedJob.installer}
             {selectedJob.jobType ? ` • ${selectedJob.jobType}` : ''}
@@ -355,4 +354,4 @@ const askForReview = () => {
       )}
     </main>
   )
-}
+
