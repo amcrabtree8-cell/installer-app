@@ -15,7 +15,7 @@ type Job = {
 }
 
 const companies = {
-  Intellihome: ['Cody', 'Jordan', 'Colby', 'Darrius', 'Chip'],
+  Intellihome: ['Cody', 'Jordan', 'Colby', 'Darrius', 'Chip', Tanner'],
   'Crabtree Custom Electric, LLC': ['Logan', 'Malachi', 'Tanner'],
 }
 
