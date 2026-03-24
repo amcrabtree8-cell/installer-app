@@ -128,15 +128,16 @@ export default function Home() {
       ? jobs.map((job) => (job.id === editingId ? newJob : job))
       : [newJob, ...jobs]
 
-    saveJobs(updated)
-    clearForm()
-    
-    setView('jobs')
-  }const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project — we truly appreciate it! Let me know if you need anything at all.`
+   saveJobs(updated)
+
+const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project - we truly appreciate it! Let me know if you need anything at all.`
 
 const smsLink = `sms:${cleanPhone(phone)}?body=${encodeURIComponent(message)}`
 
+clearForm()
+setView('jobs')
 window.location.href = smsLink
+}
   const deleteJob = (id: string) => {
     const updated = jobs.filter((job) => job.id !== id)
     saveJobs(updated)
@@ -175,8 +176,20 @@ window.location.href = smsLink
     window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
   }
 
-  const jobComplete = () => {
-    if (!selectedJob) return
+const askForReview = () => {
+  if (!selectedJob) return
+
+  const reviewLinks: Record<string, string> = {
+    Intellihome: 'https://g.page/r/Cfa0Ouenna50EBM/review',
+    'Crabtree Custom Electric, LLC': 'https://g.page/r/CTJGBytOBuuyEBM/review',
+  }
+
+  const reviewLink = reviewLinks[selectedJob.company] || ''
+
+  const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we’d really appreciate a quick review: ${reviewLink}`
+
+  window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
+}
 
     const message = `${selectedJob.installer} completed ${selectedJob.jobType || 'job'} for ${selectedJob.name} at ${selectedJob.address}.`
 
