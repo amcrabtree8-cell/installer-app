@@ -40,8 +40,8 @@ export default function Home() {
     ? companies[company as keyof typeof companies] ?? []
     : []
 
-  const showJobType = installer === 'Cody' || installer === 'Tanner'
-  const isSalesOnly = installer === 'Chip'
+ const showJobType = installer === 'Cody' || installer === 'Tanner' || installer === 'Chip'
+ const isSalesOnly = false
 
   useEffect(() => {
     try {
