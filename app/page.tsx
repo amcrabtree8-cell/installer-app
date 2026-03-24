@@ -136,7 +136,8 @@ const smsLink = `sms:${cleanPhone(phone)}?body=${encodeURIComponent(message)}`
 
 clearForm()
 setView('jobs')
-window.location.href = smsLink }
+window.location.href = smsLink
+}
   
   const deleteJob = (id: string) => {
     const updated = jobs.filter((job) => job.id !== id)
