@@ -8,7 +8,6 @@ type Job = {
   id: string
   name: string
   phone: string
-  email: string
   address: string
   company: string
   installer: string
@@ -30,7 +29,6 @@ export default function Home() {
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
   const [address, setAddress] = useState('')
 
   const [jobs, setJobs] = useState<Job[]>([])
@@ -89,7 +87,6 @@ export default function Home() {
     setJobType('')
     setName('')
     setPhone('')
-    setEmail('')
     setAddress('')
     setEditingId(null)
   }
@@ -100,7 +97,6 @@ export default function Home() {
     setJobType(job.jobType)
     setName(job.name)
     setPhone(job.phone)
-    setEmail(job.email)
     setAddress(job.address)
     setEditingId(job.id)
     setSelectedJob(null)
@@ -125,7 +121,6 @@ export default function Home() {
       jobType: isSalesOnly ? 'Sales Call' : jobType,
       name: name.trim(),
       phone,
-      email: email.trim(),
       address: address.trim(),
     }
 
@@ -135,9 +130,13 @@ export default function Home() {
 
     saveJobs(updated)
     clearForm()
+    
     setView('jobs')
-  }
+  }const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project — we truly appreciate it! Let me know if you need anything at all.`
 
+const smsLink = `sms:${cleanPhone(phone)}?body=${encodeURIComponent(message)}`
+
+window.location.href = smsLink
   const deleteJob = (id: string) => {
     const updated = jobs.filter((job) => job.id !== id)
     saveJobs(updated)
@@ -152,8 +151,8 @@ export default function Home() {
 
     const message =
       selectedJob.jobType === 'Sales Call'
-        ? `Hello ${selectedJob.name}, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way for our appointment.`
-        : `Hello ${selectedJob.name}, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way!`
+        ? `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way for our appointment.`
+        : `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way!`
 
     window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
   }
@@ -163,19 +162,10 @@ export default function Home() {
     window.location.href = `tel:${cleanPhone(selectedJob.phone)}`
   }
 
-  const sendThankYou = () => {
-    if (!selectedJob?.email) {
-      alert('No email saved for this customer.')
-      return
-    }
-
-    const body =
+     const body =
       selectedJob.jobType === 'Sales Call'
-        ? `Hi ${selectedJob.name}, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
-        : `Hi ${selectedJob.name}, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed in your home. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
-
-    window.location.href = `mailto:${selectedJob.email}?subject=Thank You&body=${encodeURIComponent(body)}`
-  }
+        ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
+        : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed in your home. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
 
   const askForReview = () => {
     if (!selectedJob) return
@@ -278,12 +268,7 @@ export default function Home() {
             onChange={(e) => handlePhoneChange(e.target.value)}
           />
 
-          <input
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
+    
           <input
             placeholder="Address *"
             value={address}
