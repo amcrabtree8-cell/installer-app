@@ -4,6 +4,13 @@ import { useEffect, useState } from 'react'
 
 type JobType = 'Install' | 'Sales Call' | ''
 
+type JobStatus = 'Open' | 'Needs Return' | 'Completed'
+
+type Installer = {
+  name: string
+  phone: string
+}
+
 type Job = {
   id: string
   name: string
@@ -11,19 +18,20 @@ type Job = {
   company: string
   installer: string
   jobType: JobType
+  status: JobStatus
 }
 
 const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
 
-const installers = [
-  'Cody',
-  'Jordan',
-  'Colby',
-  'Darrius',
-  'Chip',
-  'Tanner',
-  'Logan',
-  'Malachi',
+const installers: Installer[] = [
+  { name: 'Chip', phone: '6155092238' },
+  { name: 'Cody', phone: '6155168929' },
+  { name: 'Colby', phone: '2035597161' },
+  { name: 'Darrius', phone: '6155782432' },
+  { name: 'Jordan', phone: '6153490114' },
+  { name: 'Logan', phone: '9316754574' },
+  { name: 'Malachi', phone: '6163182882' },
+  { name: 'Tanner', phone: '6153353337' },
 ]
 
 export default function Home() {
@@ -42,21 +50,23 @@ export default function Home() {
 
   const ownerPhone = '6153101346'
 
-  const availableInstallers = installers
+  const installersWithJobType = ['Chip', 'Cody', 'Tanner']
+  const salesOnlyInstallers: string[] = []
 
-  const installersWithJobType = ['Cody', 'Tanner', 'Chip']
   const showJobType = installersWithJobType.includes(installer)
-  const isSalesOnly = false
+  const isSalesOnly = salesOnlyInstallers.includes(installer)
 
   useEffect(() => {
-    try {
-      const savedJobs = localStorage.getItem('jobs')
-      if (savedJobs) {
+    const savedJobs = localStorage.getItem('jobs')
+    if (savedJobs) {
+      try {
         const parsed = JSON.parse(savedJobs)
-        if (Array.isArray(parsed)) setJobs(parsed)
+        if (Array.isArray(parsed)) {
+          setJobs(parsed)
+        }
+      } catch (error) {
+        console.error('Failed to load jobs', error)
       }
-    } catch (error) {
-      console.error('Failed to load jobs from localStorage', error)
     }
   }, [])
 
@@ -77,8 +87,28 @@ export default function Home() {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
   }
 
-  const handlePhoneChange = (value: string) => {
-    setPhone(formatPhone(value))
+  const isValidPhone = (value: string) => cleanPhone(value).length === 10
+
+  const createId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID()
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+
+  const getInstallerPhone = (name: string) =>
+    installers.find((i) => i.name === name)?.phone || ''
+
+  const openSms = (to: string, message: string) => {
+    const phone = cleanPhone(to)
+    if (!phone) return
+    window.location.href = `sms:${phone}?body=${encodeURIComponent(message)}`
+  }
+
+  const openCall = (to: string) => {
+    const phone = cleanPhone(to)
+    if (!phone) return
+    window.location.href = `tel:${phone}`
   }
 
   const saveJobs = (updated: Job[]) => {
@@ -106,24 +136,44 @@ export default function Home() {
     setView('add')
   }
 
+  const updateJobStatus = (id: string, status: JobStatus) => {
+    const updated = jobs.map((job) =>
+      job.id === id ? { ...job, status } : job
+    )
+    saveJobs(updated)
+
+    if (selectedJob?.id === id) {
+      const updatedSelected = updated.find((job) => job.id === id) || null
+      setSelectedJob(updatedSelected)
+    }
+  }
+
   const saveJob = () => {
     if (!company || !installer || !name.trim() || !phone.trim()) {
       alert('Fill all required fields')
       return
     }
 
-    if (showJobType && !isSalesOnly && !jobType) {
-      alert('Please select a job type')
+    if (!isValidPhone(phone)) {
+      alert('Enter a valid 10-digit phone number')
       return
     }
 
+    if (showJobType && !jobType) {
+      alert('Select a job type')
+      return
+    }
+
+    const existingJob = jobs.find((job) => job.id === editingId)
+
     const newJob: Job = {
-      id: editingId || crypto.randomUUID(),
+      id: editingId || createId(),
       company,
       installer,
       jobType: isSalesOnly ? 'Sales Call' : jobType,
       name: name.trim(),
       phone,
+      status: existingJob?.status || 'Open',
     }
 
     const updated = editingId
@@ -132,12 +182,22 @@ export default function Home() {
 
     saveJobs(updated)
 
-    const message = `Hello, this is ${installer} from ${company}. Thank you again for trusting us with your project - we truly appreciate it! Let me know if you need anything at all.`
-    const smsLink = `sms:${cleanPhone(phone)}?body=${encodeURIComponent(message)}`
+    const installerPhone = getInstallerPhone(installer)
+
+    if (!editingId && installerPhone) {
+      openSms(
+        installerPhone,
+        `New job assigned:
+Customer: ${newJob.name}
+Phone: ${newJob.phone}
+Company: ${newJob.company}
+Installer: ${newJob.installer}
+Job Type: ${newJob.jobType || 'General'}`
+      )
+    }
 
     clearForm()
     setView('jobs')
-    window.location.href = smsLink
   }
 
   const deleteJob = (id: string) => {
@@ -157,12 +217,12 @@ export default function Home() {
         ? `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way for our appointment.`
         : `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way!`
 
-    window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
+    openSms(selectedJob.phone, message)
   }
 
   const callCustomer = () => {
     if (!selectedJob) return
-    window.location.href = `tel:${cleanPhone(selectedJob.phone)}`
+    openCall(selectedJob.phone)
   }
 
   const sendThankYou = () => {
@@ -173,7 +233,7 @@ export default function Home() {
         ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
         : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed for you. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
 
-    window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
+    openSms(selectedJob.phone, message)
   }
 
   const askForReview = () => {
@@ -181,30 +241,68 @@ export default function Home() {
 
     const reviewLinks: Record<string, string> = {
       Intellihome: 'https://g.page/r/Cfa0Ouenna50EBM/review',
-      'Crabtree Custom Electric, LLC': 'https://g.page/r/CTJGBytOBuuyEBM/review',
+      'Crabtree Custom Electric, LLC':
+        'https://g.page/r/CTJGBytOBuuyEBM/review',
     }
 
     const reviewLink = reviewLinks[selectedJob.company] || ''
 
     const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we’d really appreciate a quick review: ${reviewLink}`
 
-    window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
+    openSms(selectedJob.phone, message)
   }
 
   const returnNeeded = () => {
     if (!selectedJob) return
 
-    const message = `${selectedJob.installer} needs to return for ${selectedJob.name}. Company: ${selectedJob.company}${selectedJob.jobType ? ` | Job Type: ${selectedJob.jobType}` : ''}.`
+    updateJobStatus(selectedJob.id, 'Needs Return')
 
-    window.location.href = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`
+    openSms(
+      ownerPhone,
+      `RETURN NEEDED
+Installer: ${selectedJob.installer}
+Customer: ${selectedJob.name}
+Phone: ${selectedJob.phone}
+Company: ${selectedJob.company}
+${selectedJob.jobType ? `Job Type: ${selectedJob.jobType}` : ''}`
+    )
   }
 
   const jobComplete = () => {
     if (!selectedJob) return
 
-    const message = `${selectedJob.installer} completed ${selectedJob.jobType || 'job'} for ${selectedJob.name}.`
+    updateJobStatus(selectedJob.id, 'Completed')
 
-    window.location.href = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`
+    openSms(
+      ownerPhone,
+      `JOB COMPLETE
+Installer: ${selectedJob.installer}
+Customer: ${selectedJob.name}
+Type: ${selectedJob.jobType || 'General'}`
+    )
+  }
+
+  const getStatusStyle = (status: JobStatus) => {
+    switch (status) {
+      case 'Needs Return':
+        return {
+          background: '#fff3cd',
+          color: '#856404',
+          border: '1px solid #ffe69c',
+        }
+      case 'Completed':
+        return {
+          background: '#d1e7dd',
+          color: '#0f5132',
+          border: '1px solid #badbcc',
+        }
+      default:
+        return {
+          background: '#e2e3e5',
+          color: '#41464b',
+          border: '1px solid #d3d6d8',
+        }
+    }
   }
 
   return (
@@ -239,12 +337,7 @@ export default function Home() {
 
       {view === 'add' && (
         <div style={{ display: 'grid', gap: 12 }}>
-          <select
-            value={company}
-            onChange={(e) => {
-              setCompany(e.target.value)
-            }}
-          >
+          <select value={company} onChange={(e) => setCompany(e.target.value)}>
             <option value="">Select Company</option>
             {companies.map((companyName) => (
               <option key={companyName} value={companyName}>
@@ -256,16 +349,18 @@ export default function Home() {
           <select
             value={installer}
             onChange={(e) => {
-              setInstaller(e.target.value)
-              if (!installersWithJobType.includes(e.target.value)) {
+              const selectedInstaller = e.target.value
+              setInstaller(selectedInstaller)
+
+              if (!installersWithJobType.includes(selectedInstaller)) {
                 setJobType('')
               }
             }}
           >
             <option value="">Select Installer</option>
-            {availableInstallers.map((person) => (
-              <option key={person} value={person}>
-                {person}
+            {installers.map((person) => (
+              <option key={person.name} value={person.name}>
+                {person.name}
               </option>
             ))}
           </select>
@@ -290,11 +385,13 @@ export default function Home() {
           <input
             placeholder="Phone *"
             value={phone}
-            onChange={(e) => handlePhoneChange(e.target.value)}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
           />
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={saveJob}>{editingId ? 'Update Job' : 'Save Job'}</button>
+            <button onClick={saveJob}>
+              {editingId ? 'Update Job' : 'Save Job'}
+            </button>
             {editingId && <button onClick={clearForm}>Cancel Edit</button>}
           </div>
         </div>
@@ -312,13 +409,37 @@ export default function Home() {
                   border: '1px solid #ddd',
                   borderRadius: 8,
                   padding: 12,
-                  cursor: 'pointer',
                   background: 'white',
                 }}
               >
-                <div onClick={() => setSelectedJob(job)}>
-                  <strong>{job.name}</strong>
-                  <div style={{ fontSize: 14, color: '#555' }}>
+                <div
+                  onClick={() => setSelectedJob(job)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
+                    <strong>{job.name}</strong>
+                    <span
+                      style={{
+                        ...getStatusStyle(job.status),
+                        padding: '4px 8px',
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {job.status}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: 14, color: '#555', marginTop: 4 }}>
                     {job.company} • {job.installer}
                     {job.jobType ? ` • ${job.jobType}` : ''}
                   </div>
@@ -344,6 +465,22 @@ export default function Home() {
             {selectedJob.company} • {selectedJob.installer}
             {selectedJob.jobType ? ` • ${selectedJob.jobType}` : ''}
           </p>
+
+          <div>
+            <span
+              style={{
+                ...getStatusStyle(selectedJob.status),
+                padding: '6px 10px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 700,
+                display: 'inline-block',
+                marginTop: 4,
+              }}
+            >
+              {selectedJob.status}
+            </span>
+          </div>
 
           <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
             <button onClick={textOnMyWay}>On My Way</button>
