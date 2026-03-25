@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type JobType = 'Install' | 'Sales Call' | ''
 
 type JobStatus = 'Open' | 'Needs Return' | 'Completed'
+type JobFilter = 'All' | JobStatus
 
 type Installer = {
   name: string
@@ -47,6 +48,7 @@ export default function Home() {
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<JobFilter>('All')
 
   const ownerPhone = '6153101346'
 
@@ -305,6 +307,21 @@ Type: ${selectedJob.jobType || 'General'}`
     }
   }
 
+  const filteredJobs = useMemo(() => {
+    if (statusFilter === 'All') return jobs
+    return jobs.filter((job) => job.status === statusFilter)
+  }, [jobs, statusFilter])
+
+  const filterButtonStyle = (filter: JobFilter) => ({
+    padding: '8px 12px',
+    borderRadius: 999,
+    border: '1px solid #ccc',
+    background: statusFilter === filter ? '#111' : '#fff',
+    color: statusFilter === filter ? '#fff' : '#111',
+    fontWeight: 600,
+    cursor: 'pointer' as const,
+  })
+
   return (
     <main
       style={{
@@ -399,10 +416,39 @@ Type: ${selectedJob.jobType || 'General'}`
 
       {view === 'jobs' && !selectedJob && (
         <div style={{ display: 'grid', gap: 12 }}>
-          {jobs.length === 0 ? (
-            <p>No jobs saved yet.</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              style={filterButtonStyle('All')}
+              onClick={() => setStatusFilter('All')}
+            >
+              All ({jobs.length})
+            </button>
+            <button
+              style={filterButtonStyle('Open')}
+              onClick={() => setStatusFilter('Open')}
+            >
+              Open ({jobs.filter((job) => job.status === 'Open').length})
+            </button>
+            <button
+              style={filterButtonStyle('Needs Return')}
+              onClick={() => setStatusFilter('Needs Return')}
+            >
+              Needs Return (
+              {jobs.filter((job) => job.status === 'Needs Return').length})
+            </button>
+            <button
+              style={filterButtonStyle('Completed')}
+              onClick={() => setStatusFilter('Completed')}
+            >
+              Completed ({jobs.filter((job) => job.status === 'Completed').length}
+              )
+            </button>
+          </div>
+
+          {filteredJobs.length === 0 ? (
+            <p>No jobs in this filter.</p>
           ) : (
-            jobs.map((job) => (
+            filteredJobs.map((job) => (
               <div
                 key={job.id}
                 style={{
