@@ -8,16 +8,23 @@ type Job = {
   id: string
   name: string
   phone: string
-  address: string
   company: string
   installer: string
   jobType: JobType
 }
 
-const companies = {
-  Intellihome: ['Cody', 'Jordan', 'Colby', 'Darrius', 'Chip', 'Tanner'],
-  'Crabtree Custom Electric, LLC': ['Logan', 'Malachi', 'Tanner'],
-}
+const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
+
+const installers = [
+  'Cody',
+  'Jordan',
+  'Colby',
+  'Darrius',
+  'Chip',
+  'Tanner',
+  'Logan',
+  'Malachi',
+]
 
 export default function Home() {
   const [view, setView] = useState<'add' | 'jobs'>('add')
@@ -29,19 +36,17 @@ export default function Home() {
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const ownerPhone = '6153101346'
 
-  const availableInstallers = company
-    ? companies[company as keyof typeof companies] ?? []
-    : []
+  const availableInstallers = installers
 
- const showJobType = installer === 'Cody' || installer === 'Tanner' || installer === 'Chip'
- const isSalesOnly = false
+  const installersWithJobType = ['Cody', 'Tanner', 'Chip']
+  const showJobType = installersWithJobType.includes(installer)
+  const isSalesOnly = false
 
   useEffect(() => {
     try {
@@ -87,7 +92,6 @@ export default function Home() {
     setJobType('')
     setName('')
     setPhone('')
-    setAddress('')
     setEditingId(null)
   }
 
@@ -97,14 +101,13 @@ export default function Home() {
     setJobType(job.jobType)
     setName(job.name)
     setPhone(job.phone)
-    setAddress(job.address)
     setEditingId(job.id)
     setSelectedJob(null)
     setView('add')
   }
 
   const saveJob = () => {
-    if (!company || !installer || !name.trim() || !phone.trim() || !address.trim()) {
+    if (!company || !installer || !name.trim() || !phone.trim()) {
       alert('Fill all required fields')
       return
     }
@@ -121,7 +124,6 @@ export default function Home() {
       jobType: isSalesOnly ? 'Sales Call' : jobType,
       name: name.trim(),
       phone,
-      address: address.trim(),
     }
 
     const updated = editingId
@@ -169,7 +171,7 @@ export default function Home() {
     const message =
       selectedJob.jobType === 'Sales Call'
         ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
-        : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed in your home. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
+        : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed for you. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
 
     window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
   }
@@ -189,10 +191,18 @@ export default function Home() {
     window.location.href = `sms:${cleanPhone(selectedJob.phone)}?body=${encodeURIComponent(message)}`
   }
 
+  const returnNeeded = () => {
+    if (!selectedJob) return
+
+    const message = `${selectedJob.installer} needs to return for ${selectedJob.name}. Company: ${selectedJob.company}${selectedJob.jobType ? ` | Job Type: ${selectedJob.jobType}` : ''}.`
+
+    window.location.href = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`
+  }
+
   const jobComplete = () => {
     if (!selectedJob) return
 
-    const message = `${selectedJob.installer} completed ${selectedJob.jobType || 'job'} for ${selectedJob.name} at ${selectedJob.address}.`
+    const message = `${selectedJob.installer} completed ${selectedJob.jobType || 'job'} for ${selectedJob.name}.`
 
     window.location.href = `sms:${ownerPhone}?body=${encodeURIComponent(message)}`
   }
@@ -232,14 +242,11 @@ export default function Home() {
           <select
             value={company}
             onChange={(e) => {
-              const nextCompany = e.target.value
-              setCompany(nextCompany)
-              setInstaller('')
-              setJobType('')
+              setCompany(e.target.value)
             }}
           >
             <option value="">Select Company</option>
-            {Object.keys(companies).map((companyName) => (
+            {companies.map((companyName) => (
               <option key={companyName} value={companyName}>
                 {companyName}
               </option>
@@ -248,8 +255,12 @@ export default function Home() {
 
           <select
             value={installer}
-            onChange={(e) => setInstaller(e.target.value)}
-            disabled={!company}
+            onChange={(e) => {
+              setInstaller(e.target.value)
+              if (!installersWithJobType.includes(e.target.value)) {
+                setJobType('')
+              }
+            }}
           >
             <option value="">Select Installer</option>
             {availableInstallers.map((person) => (
@@ -282,12 +293,6 @@ export default function Home() {
             onChange={(e) => handlePhoneChange(e.target.value)}
           />
 
-          <input
-            placeholder="Address *"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={saveJob}>{editingId ? 'Update Job' : 'Save Job'}</button>
             {editingId && <button onClick={clearForm}>Cancel Edit</button>}
@@ -313,7 +318,6 @@ export default function Home() {
               >
                 <div onClick={() => setSelectedJob(job)}>
                   <strong>{job.name}</strong>
-                  <div>{job.address}</div>
                   <div style={{ fontSize: 14, color: '#555' }}>
                     {job.company} • {job.installer}
                     {job.jobType ? ` • ${job.jobType}` : ''}
@@ -335,7 +339,6 @@ export default function Home() {
           <button onClick={() => setSelectedJob(null)}>Back</button>
 
           <h2 style={{ marginBottom: 0 }}>{selectedJob.name}</h2>
-          <p style={{ margin: 0 }}>{selectedJob.address}</p>
           <p style={{ margin: 0 }}>{selectedJob.phone}</p>
           <p style={{ margin: 0 }}>
             {selectedJob.company} • {selectedJob.installer}
@@ -351,6 +354,7 @@ export default function Home() {
               <button onClick={askForReview}>Ask Review</button>
             )}
 
+            <button onClick={returnNeeded}>Return Needed</button>
             <button onClick={jobComplete}>Job Complete</button>
             <button onClick={() => loadJobForEdit(selectedJob)}>Edit Job</button>
             <button onClick={() => deleteJob(selectedJob.id)}>Delete Job</button>
