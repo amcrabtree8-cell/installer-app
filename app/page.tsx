@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 type JobType = 'Install' | 'Sales Call' | ''
 
@@ -20,6 +21,7 @@ type Job = {
   installer: string
   jobType: JobType
   status: JobStatus
+  created_at?: string
 }
 
 const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
@@ -58,28 +60,6 @@ export default function Home() {
   const showJobType = installersWithJobType.includes(installer)
   const isSalesOnly = salesOnlyInstallers.includes(installer)
 
-  useEffect(() => {
-    const savedJobs = localStorage.getItem('jobs')
-    if (savedJobs) {
-      try {
-        const parsed = JSON.parse(savedJobs)
-        if (Array.isArray(parsed)) {
-          setJobs(parsed)
-        }
-      } catch (error) {
-        console.error('Failed to load jobs', error)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (isSalesOnly) {
-      setJobType('Sales Call')
-    } else if (!showJobType) {
-      setJobType('')
-    }
-  }, [installer, isSalesOnly, showJobType])
-
   const cleanPhone = (value: string) => value.replace(/\D/g, '')
 
   const formatPhone = (value: string) => {
@@ -91,32 +71,46 @@ export default function Home() {
 
   const isValidPhone = (value: string) => cleanPhone(value).length === 10
 
-  const createId = () => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID()
-    }
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  }
-
   const getInstallerPhone = (name: string) =>
     installers.find((i) => i.name === name)?.phone || ''
 
   const openSms = (to: string, message: string) => {
-    const phone = cleanPhone(to)
-    if (!phone) return
-    window.location.href = `sms:${phone}?body=${encodeURIComponent(message)}`
+    const cleaned = cleanPhone(to)
+    if (!cleaned) return
+    window.location.href = `sms:${cleaned}?body=${encodeURIComponent(message)}`
   }
 
   const openCall = (to: string) => {
-    const phone = cleanPhone(to)
-    if (!phone) return
-    window.location.href = `tel:${phone}`
+    const cleaned = cleanPhone(to)
+    if (!cleaned) return
+    window.location.href = `tel:${cleaned}`
   }
 
-  const saveJobs = (updated: Job[]) => {
-    setJobs(updated)
-    localStorage.setItem('jobs', JSON.stringify(updated))
+  const fetchJobs = async () => {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Failed to load jobs', error)
+      return
+    }
+
+    setJobs((data as Job[]) || [])
   }
+
+  useEffect(() => {
+    fetchJobs()
+  }, [])
+
+  useEffect(() => {
+    if (isSalesOnly) {
+      setJobType('Sales Call')
+    } else if (!showJobType) {
+      setJobType('')
+    }
+  }, [installer, isSalesOnly, showJobType])
 
   const clearForm = () => {
     setCompany('')
@@ -138,19 +132,26 @@ export default function Home() {
     setView('add')
   }
 
-  const updateJobStatus = (id: string, status: JobStatus) => {
-    const updated = jobs.map((job) =>
-      job.id === id ? { ...job, status } : job
-    )
-    saveJobs(updated)
+  const updateJobStatus = async (id: string, status: JobStatus) => {
+    const { error } = await supabase
+      .from('jobs')
+      .update({ status })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Failed to update status', error)
+      alert('Could not update job status')
+      return
+    }
+
+    await fetchJobs()
 
     if (selectedJob?.id === id) {
-      const updatedSelected = updated.find((job) => job.id === id) || null
-      setSelectedJob(updatedSelected)
+      setSelectedJob((current) => (current ? { ...current, status } : current))
     }
   }
 
-  const saveJob = () => {
+  const saveJob = async () => {
     if (!company || !installer || !name.trim() || !phone.trim()) {
       alert('Fill all required fields')
       return
@@ -168,21 +169,37 @@ export default function Home() {
 
     const existingJob = jobs.find((job) => job.id === editingId)
 
-    const newJob: Job = {
-      id: editingId || createId(),
+    const newJob = {
+      name: name.trim(),
+      phone,
       company,
       installer,
       jobType: isSalesOnly ? 'Sales Call' : jobType,
-      name: name.trim(),
-      phone,
-      status: existingJob?.status || 'Open',
+      status: (existingJob?.status || 'Open') as JobStatus,
     }
 
-    const updated = editingId
-      ? jobs.map((job) => (job.id === editingId ? newJob : job))
-      : [newJob, ...jobs]
+    if (editingId) {
+      const { error } = await supabase
+        .from('jobs')
+        .update(newJob)
+        .eq('id', editingId)
 
-    saveJobs(updated)
+      if (error) {
+        console.error('Failed to update job', error)
+        alert('Could not update job')
+        return
+      }
+    } else {
+      const { error } = await supabase.from('jobs').insert([newJob])
+
+      if (error) {
+        console.error('Failed to save job', error)
+        alert('Could not save job')
+        return
+      }
+    }
+
+    await fetchJobs()
 
     const installerPhone = getInstallerPhone(installer)
 
@@ -202,9 +219,16 @@ Job Type: ${newJob.jobType || 'General'}`
     setView('jobs')
   }
 
-  const deleteJob = (id: string) => {
-    const updated = jobs.filter((job) => job.id !== id)
-    saveJobs(updated)
+  const deleteJob = async (id: string) => {
+    const { error } = await supabase.from('jobs').delete().eq('id', id)
+
+    if (error) {
+      console.error('Failed to delete job', error)
+      alert('Could not delete job')
+      return
+    }
+
+    await fetchJobs()
 
     if (selectedJob?.id === id) {
       setSelectedJob(null)
@@ -254,10 +278,10 @@ Job Type: ${newJob.jobType || 'General'}`
     openSms(selectedJob.phone, message)
   }
 
-  const returnNeeded = () => {
+  const returnNeeded = async () => {
     if (!selectedJob) return
 
-    updateJobStatus(selectedJob.id, 'Needs Return')
+    await updateJobStatus(selectedJob.id, 'Needs Return')
 
     openSms(
       ownerPhone,
@@ -270,10 +294,10 @@ ${selectedJob.jobType ? `Job Type: ${selectedJob.jobType}` : ''}`
     )
   }
 
-  const jobComplete = () => {
+  const jobComplete = async () => {
     if (!selectedJob) return
 
-    updateJobStatus(selectedJob.id, 'Completed')
+    await updateJobStatus(selectedJob.id, 'Completed')
 
     openSms(
       ownerPhone,
@@ -283,6 +307,11 @@ Customer: ${selectedJob.name}
 Type: ${selectedJob.jobType || 'General'}`
     )
   }
+
+  const filteredJobs = useMemo(() => {
+    if (statusFilter === 'All') return jobs
+    return jobs.filter((job) => job.status === statusFilter)
+  }, [jobs, statusFilter])
 
   const getStatusStyle = (status: JobStatus) => {
     switch (status) {
@@ -306,11 +335,6 @@ Type: ${selectedJob.jobType || 'General'}`
         }
     }
   }
-
-  const filteredJobs = useMemo(() => {
-    if (statusFilter === 'All') return jobs
-    return jobs.filter((job) => job.status === statusFilter)
-  }, [jobs, statusFilter])
 
   const filterButtonStyle = (filter: JobFilter) => ({
     padding: '8px 12px',
@@ -368,7 +392,6 @@ Type: ${selectedJob.jobType || 'General'}`
             onChange={(e) => {
               const selectedInstaller = e.target.value
               setInstaller(selectedInstaller)
-
               if (!installersWithJobType.includes(selectedInstaller)) {
                 setJobType('')
               }
@@ -433,15 +456,13 @@ Type: ${selectedJob.jobType || 'General'}`
               style={filterButtonStyle('Needs Return')}
               onClick={() => setStatusFilter('Needs Return')}
             >
-              Needs Return (
-              {jobs.filter((job) => job.status === 'Needs Return').length})
+              Needs Return ({jobs.filter((job) => job.status === 'Needs Return').length})
             </button>
             <button
               style={filterButtonStyle('Completed')}
               onClick={() => setStatusFilter('Completed')}
             >
-              Completed ({jobs.filter((job) => job.status === 'Completed').length}
-              )
+              Completed ({jobs.filter((job) => job.status === 'Completed').length})
             </button>
           </div>
 
