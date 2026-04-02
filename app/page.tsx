@@ -38,7 +38,7 @@ const installers: Installer[] = [
   { name: 'Tanner', phone: '6153353337' },
 ]
 
-export default function Home() {
+export default function Home() {  
   const [view, setView] = useState<'add' | 'jobs'>('add')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
