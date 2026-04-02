@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
+
 type JobType = 'Install' | 'Sales Call' | ''
 
 type JobStatus = 'Open' | 'Needs Return' | 'Completed'
