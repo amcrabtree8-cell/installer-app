@@ -140,7 +140,7 @@ export default function Home() {
 
     if (error) {
       console.error('Failed to update status', error)
-      alert('Could not update job status')
+      alert(`Could not update job status: ${error.message}`)
       return
     }
 
@@ -186,7 +186,7 @@ export default function Home() {
 
       if (error) {
         console.error('Failed to update job', error)
-        alert('Could not update job')
+        alert(`Could not update job: ${error.message}`)
         return
       }
     } else {
@@ -194,7 +194,7 @@ export default function Home() {
 
       if (error) {
         console.error('Failed to save job', error)
-        alert('Could not save job')
+        alert(`Could not save job: ${error.message}`)
         return
       }
     }
@@ -224,7 +224,7 @@ Job Type: ${newJob.jobType || 'General'}`
 
     if (error) {
       console.error('Failed to delete job', error)
-      alert('Could not delete job')
+      alert(`Could not delete job: ${error.message}`)
       return
     }
 
@@ -256,8 +256,8 @@ Job Type: ${newJob.jobType || 'General'}`
 
     const message =
       selectedJob.jobType === 'Sales Call'
-        ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I’m here to help. I’d love the opportunity to earn your business.`
-        : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed for you. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we’d be glad to help.`
+        ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I'm here to help. I'd love the opportunity to earn your business.`
+        : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed for you. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we'd be glad to help.`
 
     openSms(selectedJob.phone, message)
   }
@@ -273,7 +273,7 @@ Job Type: ${newJob.jobType || 'General'}`
 
     const reviewLink = reviewLinks[selectedJob.company] || ''
 
-    const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we’d really appreciate a quick review: ${reviewLink}`
+    const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we'd really appreciate a quick review: ${reviewLink}`
 
     openSms(selectedJob.phone, message)
   }
