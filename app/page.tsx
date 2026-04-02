@@ -23,7 +23,7 @@ type Job = {
   status: JobStatus
   created_at?: string
 }
-
+ 
 const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
 
 const installers: Installer[] = [
