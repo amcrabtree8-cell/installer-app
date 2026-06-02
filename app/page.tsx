@@ -367,7 +367,7 @@ Type: ${selectedJob.jobType || 'General'}`
     color: statusFilter === filter ? '#fff' : '#111',
     fontWeight: 600,
     cursor: 'pointer' as const,
-  })
+  }
 
   return (
     <main
