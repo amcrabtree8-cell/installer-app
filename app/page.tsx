@@ -359,17 +359,7 @@ Type: ${selectedJob.jobType || 'General'}`
     }
   }
 
-const filterButtonStyle = (filter: JobFilter) => {
-  return {
-    padding: '8px 12px',
-    borderRadius: 999,
-    border: '1px solid #ccc',
-    background: statusFilter === filter ? '#111' : '#fff',
-    color: statusFilter === filter ? '#fff' : '#111',
-    fontWeight: 600,
-    cursor: 'pointer' as const,
-  }
-   }
+
  
   return (
     <main
