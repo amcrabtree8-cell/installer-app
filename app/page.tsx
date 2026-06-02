@@ -378,7 +378,25 @@ Type: ${selectedJob.jobType || 'General'}`
         fontFamily: 'Arial, sans-serif',
       }}
     >
-      <h1 style={{ marginBottom: 16 }}>Installer App</h1>
+     <h1 style={{ marginBottom: 16 }}>Installer App</h1>
+    
+<button
+  onClick={logout}
+  style={{
+    float: 'right',
+    padding: '10px 16px',
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    marginBottom: 20
+  }}
+>
+  Log Out
+</button>
+
+<div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
