@@ -356,10 +356,11 @@ Type: ${selectedJob.jobType || 'General'}`
           color: '#41464b',
           border: '1px solid #d3d6d8',
         }
-    }
-  }
-
-
+}
+}
+}
+return (
+  <main
  
   return (
     <main
