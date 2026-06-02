@@ -103,7 +103,15 @@ export default function Home() {
 
     setJobs((data as Job[]) || [])
   }
+setJobs((data as Job[]) || [])
+}
 
+const logout = async () => {
+  await supabase.auth.signOut()
+  router.push('/login')
+}
+
+useEffect(() => {
 useEffect(() => {
   const checkLogin = async () => {
     const { data } = await supabase.auth.getSession()
