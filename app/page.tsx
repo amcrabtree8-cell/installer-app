@@ -359,7 +359,7 @@ Type: ${selectedJob.jobType || 'General'}`
     }
   }
 
- const filterButtonStyle = (filter: JobFilter) => {
+const filterButtonStyle = (filter: JobFilter) => {
   return {
     padding: '8px 12px',
     borderRadius: 999,
@@ -369,8 +369,7 @@ Type: ${selectedJob.jobType || 'General'}`
     fontWeight: 600,
     cursor: 'pointer' as const,
   }
- }
-
+}
   return (
     <main
       style={{
