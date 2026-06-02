@@ -369,6 +369,8 @@ const filterButtonStyle = (filter: JobFilter) => {
     fontWeight: 600,
     cursor: 'pointer' as const,
   }
+   }
+ 
   return (
     <main
       style={{
