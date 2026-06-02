@@ -358,10 +358,6 @@ Type: ${selectedJob.jobType || 'General'}`
         }
 }
 }
-}
-return (
-  <main
- 
   return (
     <main
       style={{
