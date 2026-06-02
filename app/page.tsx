@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+
 import { supabase } from '@/lib/supabase'
 
 
@@ -38,7 +40,8 @@ const installers: Installer[] = [
   { name: 'Tanner', phone: '6153353337' },
 ]
 
-export default function Home() {  
+export default function Home() { 
+    const router = useRouter()
   const [view, setView] = useState<'add' | 'jobs'>('add')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
@@ -101,9 +104,20 @@ export default function Home() {
     setJobs((data as Job[]) || [])
   }
 
-  useEffect(() => {
+useEffect(() => {
+  const checkLogin = async () => {
+    const { data } = await supabase.auth.getSession()
+
+    if (!data.session) {
+      router.push('/login')
+      return
+    }
+
     fetchJobs()
-  }, [])
+  }
+
+  checkLogin()
+}, [router])
 
   useEffect(() => {
     if (isSalesOnly) {
