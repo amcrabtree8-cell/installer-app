@@ -369,7 +369,7 @@ Type: ${selectedJob.jobType || 'General'}`
     fontWeight: 600,
     cursor: 'pointer' as const,
   }
-}
+ }
 
   return (
     <main
