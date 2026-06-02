@@ -15,7 +15,7 @@ type Installer = {
   name: string
   phone: string
 }
-  
+
 type Job = {
   id: string
   name: string
@@ -103,15 +103,7 @@ export default function Home() {
 
     setJobs((data as Job[]) || [])
   }
-setJobs((data as Job[]) || [])
-}
 
-const logout = async () => {
-  await supabase.auth.signOut()
-  router.push('/login')
-}
-
-useEffect(() => {
 useEffect(() => {
   const checkLogin = async () => {
     const { data } = await supabase.auth.getSession()
@@ -356,8 +348,19 @@ Type: ${selectedJob.jobType || 'General'}`
           color: '#41464b',
           border: '1px solid #d3d6d8',
         }
-}
-}
+    }
+  }
+
+  const filterButtonStyle = (filter: JobFilter) => ({
+    padding: '8px 12px',
+    borderRadius: 999,
+    border: '1px solid #ccc',
+    background: statusFilter === filter ? '#111' : '#fff',
+    color: statusFilter === filter ? '#fff' : '#111',
+    fontWeight: 600,
+    cursor: 'pointer' as const,
+  })
+
   return (
     <main
       style={{
@@ -367,10 +370,7 @@ Type: ${selectedJob.jobType || 'General'}`
         fontFamily: 'Arial, sans-serif',
       }}
     >
-     <h1 style={{ marginBottom: 16 }}>Installer App</h1>
-  <button onClick={logout}>Log Out</button>  
-
-<div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+      <h1 style={{ marginBottom: 16 }}>Installer App</h1>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
