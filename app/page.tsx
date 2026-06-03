@@ -393,7 +393,6 @@ const filteredJobs = useMemo(() => {
       <h1 style={{ marginBottom: 16 }}>Installer App</h1>
 
       <p>Logged in as: {currentUserEmail}</p>
-      <p>Matched installer: {currentInstaller?.name || 'No match'}</p>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
