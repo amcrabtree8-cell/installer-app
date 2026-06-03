@@ -14,6 +14,7 @@ type JobFilter = 'All' | JobStatus
 type Installer = {
   name: string
   phone: string
+  email: string
 }
 
 type Job = {
@@ -30,19 +31,19 @@ type Job = {
 const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
 
 const installers: Installer[] = [
-  { name: 'Chip', phone: '6155092238' },
-  { name: 'Cody', phone: '6155168929' },
-  { name: 'Colby', phone: '2035597161' },
-  { name: 'Darrius', phone: '6155782432' },
-  { name: 'Jordan', phone: '6153490114' },
-  { name: 'Logan', phone: '9316754574' },
-  { name: 'Malachi', phone: '6163182882' },
-  { name: 'Tanner', phone: '6153353337' },
+  { name: 'Chip', phone: '6155092238', email: 'chip@cometotheexperts.com' },
+  { name: 'Cody', phone: '6155168929', email: 'cody@cometotheexperts.com' },
+  { name: 'Colby', phone: '2035597161', email: 'colby@cometotheexperts.com' },
+  { name: 'Darrius', phone: '6155782432', email: 'darrius@cometotheexperts.com' },
+  { name: 'Jordan', phone: '6153490114', email: 'jordan@cometotheexperts.com' },
+  { name: 'Logan', phone: '9316754574', email: 'logan@cometotheexperts.com' },
+  { name: 'Malachi', phone: '6163182882', email: 'malachiawalkes@gmail.com' },
+  { name: 'Tanner', phone: '6153353337', email: 'tanner@cometotheexperts.com' },
 ]
 
 export default function Home() { 
     const router = useRouter()
-  const [view, setView] = useState<'add' | 'jobs'>('add')
+  const [view, setView] = useState<'add' | 'jobs' | 'myJobs'>('add')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
   const [company, setCompany] = useState('')
@@ -55,6 +56,8 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<JobFilter>('All')
+
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
 
   const ownerPhone = '6153101346'
 
@@ -108,12 +111,14 @@ useEffect(() => {
   const checkLogin = async () => {
     const { data } = await supabase.auth.getSession()
 
-    if (!data.session) {
-      router.push('/login')
-      return
-    }
+if (!data.session) {
+  router.push('/login')
+  return
+}
 
-    fetchJobs()
+setCurrentUserEmail(data.session.user.email ?? null)
+
+fetchJobs()
   }
 
   checkLogin()
@@ -323,10 +328,25 @@ Type: ${selectedJob.jobType || 'General'}`
     )
   }
 
-  const filteredJobs = useMemo(() => {
-    if (statusFilter === 'All') return jobs
-    return jobs.filter((job) => job.status === statusFilter)
-  }, [jobs, statusFilter])
+const currentInstaller = installers.find(
+  (installer) =>
+    installer.email.trim().toLowerCase() === currentUserEmail?.trim().toLowerCase()
+)
+
+const filteredJobs = useMemo(() => {
+  const baseJobs =
+    view === 'myJobs'
+      ? jobs.filter(
+          (job) =>
+            job.installer?.trim().toLowerCase() ===
+            currentInstaller?.name.trim().toLowerCase()
+        )
+      : jobs
+
+  if (statusFilter === 'All') return baseJobs
+
+  return baseJobs.filter((job) => job.status === statusFilter)
+}, [jobs, statusFilter, view, currentInstaller])
 
   const getStatusStyle = (status: JobStatus) => {
     switch (status) {
@@ -372,6 +392,9 @@ Type: ${selectedJob.jobType || 'General'}`
     >
       <h1 style={{ marginBottom: 16 }}>Installer App</h1>
 
+      <p>Logged in as: {currentUserEmail}</p>
+      <p>Matched installer: {currentInstaller?.name || 'No match'}</p>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
           onClick={() => {
@@ -389,6 +412,7 @@ Type: ${selectedJob.jobType || 'General'}`
         >
           View Jobs
         </button>
+        <button onClick={() => setView('myJobs')}>My Jobs</button>
       </div>
 
       {view === 'add' && (
@@ -452,7 +476,7 @@ Type: ${selectedJob.jobType || 'General'}`
         </div>
       )}
 
-      {view === 'jobs' && !selectedJob && (
+      {(view === 'jobs' || view === 'myJobs') && !selectedJob && (
         <div style={{ display: 'grid', gap: 12 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
