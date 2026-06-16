@@ -25,6 +25,9 @@ type Job = {
   installer: string
   jobType: JobType
   status: JobStatus
+  jobName: string
+  jobDate: string
+  timeWindow: string
   created_at?: string
 }
  
@@ -49,6 +52,11 @@ export default function Home() {
   const [company, setCompany] = useState('')
   const [installer, setInstaller] = useState('')
   const [jobType, setJobType] = useState<JobType>('')
+
+  const [jobName, setJobName] = useState('')
+
+  const [jobDate, setJobDate] = useState('')
+  const [timeWindow, setTimeWindow] = useState('')
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -137,6 +145,9 @@ fetchJobs()
     setInstaller('')
     setJobType('')
     setName('')
+    setJobName('')
+    setTimeWindow('')
+    setJobDate('')
     setPhone('')
     setEditingId(null)
   }
@@ -192,6 +203,9 @@ fetchJobs()
     const newJob = {
       name: name.trim(),
       phone,
+      jobName,
+      jobDate,
+      timeWindow,
       company,
       installer,
       jobType: isSalesOnly ? 'Sales Call' : jobType,
@@ -393,6 +407,7 @@ const filteredJobs = useMemo(() => {
       <h1 style={{ marginBottom: 16 }}>Installer App</h1>
 
       <p>Logged in as: {currentUserEmail}</p>
+      <p>Matched installer: {currentInstaller?.name || 'No match'}</p>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button
@@ -453,7 +468,24 @@ const filteredJobs = useMemo(() => {
               <option value="Sales Call">Sales Call</option>
             </select>
           )}
-
+          <input
+            type="date"
+            value={jobDate}
+            onChange={(e) => setJobDate(e.target.value)}
+            style={{ width: '100%', padding: 10, marginBottom: 10 }}
+          />
+          <input
+            placeholder="Time Window"
+            value={timeWindow}
+            onChange={(e) => setTimeWindow(e.target.value)}
+            style={{ width: '100%', padding: 10, marginBottom: 10 }}
+          />
+           <input
+              placeholder="Job Name"
+              value={jobName}
+              onChange={(e) => setJobName(e.target.value)}
+              style={{ width: '100%', padding: 10, marginBottom: 10 }}
+            />
           <input
             placeholder="Name *"
             value={name}
@@ -529,7 +561,19 @@ const filteredJobs = useMemo(() => {
                       gap: 10,
                     }}
                   >
-                    <strong>{job.name}</strong>
+                    <strong>{job.jobName || job.name}</strong>
+                    <div>Customer: {job.name}</div>
+                    <div>
+                        Date:{' '}
+                        {job.jobDate
+                          ? new Date(job.jobDate + 'T00:00:00').toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: '2-digit',
+                            })
+                          : 'No date selected'}
+                      </div>
+                    <div>Time Window: {job.timeWindow || 'No time window selected'}</div>
                     <span
                       style={{
                         ...getStatusStyle(job.status),
