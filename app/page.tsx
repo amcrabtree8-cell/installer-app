@@ -103,26 +103,28 @@ export default function Home() {
     installers.find((i) => i.name === name)?.phone || ''
 
   const logActivity = async (
-    job: Job,
-    actionType: string,
-    note: string
-  ) => {
-    const { error } = await supabase.from('job_activity').insert({
-      job_id: job.id,
-      job_name: job.jobName || '',
-      customer_name: job.name || '',
-      installer: job.installer || '',
-      action_type: actionType,
-      note,
-    })
+  job: Job,
+  actionType: string,
+  note: string
+) => {
+  const { error } = await supabase.from('job_activity').insert({
+    job_id: job.id,
+    job_name: job.jobName || '',
+    customer_name: job.name || '',
+    installer: job.installer || '',
+    action_type: actionType,
+    note,
+  })
 
-    if (error) {
-      console.error('Failed to log activity:', error)
-    }
-
-    fetchActivity()
-
+  if (error) {
+    alert('Activity did not save: ' + error.message)
+    console.error('Failed to log activity:', error)
+    return
   }
+
+  alert('Activity saved')
+  fetchActivity()
+}
 
   const openSms = (to: string, message: string) => {
   const cleaned = cleanPhone(to)
