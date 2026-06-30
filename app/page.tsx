@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 
-type JobType = 'Install' | 'Sales Call' | ''
+type JobType = 'Install' | 'Sales Call' | 'Service Call' | ''
 
 type JobStatus = 'Open' | 'Needs Return' | 'Completed'
 type JobFilter = 'All' | JobStatus
@@ -153,6 +153,11 @@ const openJobSms = async (
     if (!cleaned) return
     window.location.href = `tel:${cleaned}`
   }
+
+  const logout = async () => {
+  await supabase.auth.signOut()
+  router.push('/login')
+}
 
   const fetchJobs = async () => {
     const { data, error } = await supabase
@@ -495,8 +500,8 @@ const filteredJobs = useMemo(() => {
           View Jobs
         </button>
         <button onClick={() => setView('myJobs')}>My Jobs</button>
-
         <button onClick={() => setView('dashboard')}>Dashboard</button>
+        <button onClick={logout}>Log Out</button>
       </div>
       
       {view === 'dashboard' && (
@@ -574,6 +579,7 @@ const filteredJobs = useMemo(() => {
               <option value="">Select Job Type</option>
               <option value="Install">Install</option>
               <option value="Sales Call">Sales Call</option>
+              <option value="Service Call">Service Call</option>
             </select>
           )}
           <input
