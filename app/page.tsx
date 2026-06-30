@@ -30,6 +30,17 @@ type Job = {
   timeWindow: string
   created_at?: string
 }
+
+type Activity = {
+  id: string
+  created_at: string
+  job_id: string
+  job_name: string
+  customer_name: string
+  installer: string
+  action_type: string
+  note: string
+}
  
 const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
 
@@ -46,7 +57,7 @@ const installers: Installer[] = [
 
 export default function Home() { 
     const router = useRouter()
-  const [view, setView] = useState<'add' | 'jobs' | 'myJobs'>('add')
+  const [view, setView] = useState<'add' | 'jobs' | 'myJobs' | 'dashboard'>('add')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
   const [company, setCompany] = useState('')
@@ -54,6 +65,8 @@ export default function Home() {
   const [jobType, setJobType] = useState<JobType>('')
 
   const [jobName, setJobName] = useState('')
+
+  const [activity, setActivity] = useState<Activity[]>([])
 
   const [jobDate, setJobDate] = useState('')
   const [timeWindow, setTimeWindow] = useState('')
@@ -89,11 +102,49 @@ export default function Home() {
   const getInstallerPhone = (name: string) =>
     installers.find((i) => i.name === name)?.phone || ''
 
-  const openSms = (to: string, message: string) => {
-    const cleaned = cleanPhone(to)
-    if (!cleaned) return
-    window.location.href = `sms:${cleaned}?body=${encodeURIComponent(message)}`
+  const logActivity = async (
+    job: Job,
+    actionType: string,
+    note: string
+  ) => {
+    const { error } = await supabase.from('job_activity').insert({
+      job_id: job.id,
+      job_name: job.jobName || '',
+      customer_name: job.name || '',
+      installer: job.installer || '',
+      action_type: actionType,
+      note,
+    })
+
+    if (error) {
+      console.error('Failed to log activity:', error)
+    }
+
+    fetchActivity()
+
   }
+
+  const openSms = (to: string, message: string) => {
+  const cleaned = cleanPhone(to)
+  if (!cleaned) return
+  window.location.href = `sms:${cleaned}?body=${encodeURIComponent(message)}`
+}
+const openJobSms = async (
+  job: Job,
+  message: string,
+  actionType: string
+) => {
+  const cleaned = cleanPhone(job.phone)
+  if (!cleaned) return
+
+  await logActivity(
+    job,
+    actionType,
+    `${job.installer} sent ${actionType} to ${job.name}`
+  )
+
+  window.location.href = `sms:${cleaned}?body=${encodeURIComponent(message)}`
+}
 
   const openCall = (to: string) => {
     const cleaned = cleanPhone(to)
@@ -115,6 +166,20 @@ export default function Home() {
     setJobs((data as Job[]) || [])
   }
 
+  const fetchActivity = async () => {
+    const { data, error } = await supabase
+      .from('job_activity')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to load activity:', error)
+    return
+  }
+
+  setActivity((data as Activity[]) || [])
+}
+
 useEffect(() => {
   const checkLogin = async () => {
     const { data } = await supabase.auth.getSession()
@@ -127,6 +192,7 @@ if (!data.session) {
 setCurrentUserEmail(data.session.user.email ?? null)
 
 fetchJobs()
+fetchActivity()
   }
 
   checkLogin()
@@ -277,7 +343,7 @@ Job Type: ${newJob.jobType || 'General'}`
         ? `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way for our appointment.`
         : `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way!`
 
-    openSms(selectedJob.phone, message)
+    openJobSms(selectedJob, message, 'On My Way Text')
   }
 
   const callCustomer = () => {
@@ -293,7 +359,7 @@ Job Type: ${newJob.jobType || 'General'}`
         ? `Hello, thank you for taking the time to meet with me today. I really enjoyed learning more about your project and helping find the best solution for your home. If any questions come up, I'm here to help. I'd love the opportunity to earn your business.`
         : `Hello, thank you for choosing us. We truly appreciate your business and hope you feel great about the work completed for you. It means a lot to us to be trusted with your project, and if you ever need anything in the future, we'd be glad to help.`
 
-    openSms(selectedJob.phone, message)
+    openJobSms(selectedJob, message, 'Thank You Text')
   }
 
   const askForReview = () => {
@@ -309,7 +375,7 @@ Job Type: ${newJob.jobType || 'General'}`
 
     const message = `Hello, thank you again for trusting us with your project. If you were happy with your experience, we'd really appreciate a quick review: ${reviewLink}`
 
-    openSms(selectedJob.phone, message)
+    openJobSms(selectedJob, message, 'Review Request')
   }
 
   const returnNeeded = async () => {
@@ -427,7 +493,47 @@ const filteredJobs = useMemo(() => {
           View Jobs
         </button>
         <button onClick={() => setView('myJobs')}>My Jobs</button>
+
+        <button onClick={() => setView('dashboard')}>Dashboard</button>
       </div>
+      
+      {view === 'dashboard' && (
+  <section>
+    <h2>Dashboard Activity</h2>
+
+    {activity.length === 0 ? (
+      <p>No activity yet.</p>
+    ) : (
+      activity.map((item) => (
+        <div
+          key={item.id}
+          style={{
+            border: '1px solid #ddd',
+            padding: 12,
+            marginBottom: 10,
+            borderRadius: 8,
+            background: '#fff',
+          }}
+        >
+          <strong>{item.action_type}</strong>
+
+          <div>{item.note}</div>
+
+          <div>Job: {item.job_name || 'No job name'}</div>
+          <div>Customer: {item.customer_name}</div>
+          <div>Installer: {item.installer}</div>
+
+          <div>
+            Time:{' '}
+            {item.created_at
+              ? new Date(item.created_at).toLocaleString()
+              : 'No time'}
+          </div>
+        </div>
+      ))
+    )}
+  </section>
+)}
 
       {view === 'add' && (
         <div style={{ display: 'grid', gap: 12 }}>
