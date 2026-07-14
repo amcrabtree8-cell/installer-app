@@ -12,9 +12,11 @@ type JobStatus = 'Open' | 'Needs Return' | 'Completed'
 type JobFilter = 'All' | JobStatus
 
 type Installer = {
+  id: string
   name: string
   phone: string
   email: string
+  active: boolean
 }
 
 type Job = {
@@ -41,30 +43,44 @@ type Activity = {
   action_type: string
   note: string
 }
- 
+
 const companies = ['Intellihome', 'Crabtree Custom Electric, LLC']
 
-const installers: Installer[] = [
-  { name: 'Chip', phone: '6155092238', email: 'chip@cometotheexperts.com' },
-  { name: 'Cody', phone: '6155168929', email: 'cody@cometotheexperts.com' },
-  { name: 'Colby', phone: '2035597161', email: 'colby@cometotheexperts.com' },
-  { name: 'Darrius', phone: '6155782432', email: 'darrius@cometotheexperts.com' },
-  { name: 'Jordan', phone: '6153490114', email: 'jordan@cometotheexperts.com' },
-  { name: 'Logan', phone: '9316754574', email: 'logan@cometotheexperts.com' },
-  { name: 'Malachi', phone: '6163182882', email: 'malachiawalkes@gmail.com' },
-  { name: 'Tanner', phone: '6153353337', email: 'tanner@cometotheexperts.com' },
-]
+// const installers: Installer[] = [
+//   { name: 'Chip', phone: '6155092238', email: 'chip@cometotheexperts.com' },
+//   { name: 'Cody', phone: '6155168929', email: 'cody@cometotheexperts.com' },
+//   { name: 'Colby', phone: '2035597161', email: 'colby@cometotheexperts.com' },
+//   { name: 'Darrius', phone: '6155782432', email: 'darrius@cometotheexperts.com' },
+//   { name: 'Jordan', phone: '6153490114', email: 'jordan@cometotheexperts.com' },
+//   { name: 'Logan', phone: '9316754574', email: 'logan@cometotheexperts.com' },
+//   { name: 'Malachi', phone: '6163182882', email: 'malachiawalkes@gmail.com' },
+//   { name: 'Tanner', phone: '6153353337', email: 'tanner@cometotheexperts.com' },
+// ]
 
 export default function Home() { 
     const router = useRouter()
-  const [view, setView] = useState<'add' | 'jobs' | 'myJobs' | 'dashboard'>('add')
+  const [view, setView] = useState<'add' | 'jobs' | 'myJobs' | 'dashboard'| 'installers'>('add')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
   const [company, setCompany] = useState('')
   const [installer, setInstaller] = useState('')
   const [jobType, setJobType] = useState<JobType>('')
 
+  const [jobSearch, setJobSearch] = useState('')
+
+  const [isAdmin, setIsAdmin] = useState(false)
+
   const [jobName, setJobName] = useState('')
+
+  const [installers, setInstallers] = useState<Installer[]>([])
+  const [newInstallerName, setNewInstallerName] = useState('')
+  const [newInstallerPhone, setNewInstallerPhone] = useState('')
+  const [newInstallerEmail, setNewInstallerEmail] = useState('')
+
+  const [editingInstallerId, setEditingInstallerId] = useState<string | null>(null)
+  const [editInstallerName, setEditInstallerName] = useState('')
+  const [editInstallerPhone, setEditInstallerPhone] = useState('')
+  const [editInstallerEmail, setEditInstallerEmail] = useState('')
 
   const [activity, setActivity] = useState<Activity[]>([])
 
@@ -172,6 +188,20 @@ const openJobSms = async (
 
     setJobs((data as Job[]) || [])
   }
+  const fetchInstallers = async () => {
+    const { data, error } = await supabase
+      .from('installers')
+      .select('*')
+      .eq('active', true)
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Failed to load installers:', error)
+      return
+    }
+
+  setInstallers((data as Installer[]) || [])
+}
 
   const fetchActivity = async () => {
     const { data, error } = await supabase
@@ -197,8 +227,10 @@ if (!data.session) {
 }
 
 setCurrentUserEmail(data.session.user.email ?? null)
+checkAdmin(data.session.user.email)
 
 fetchJobs()
+fetchInstallers()
 fetchActivity()
   }
 
@@ -254,6 +286,128 @@ fetchActivity()
       setSelectedJob((current) => (current ? { ...current, status } : current))
     }
   }
+
+  const removeInstaller = async (installerId: string) => {
+  const confirmed = confirm('Remove this installer from the active list?')
+  if (!confirmed) return
+
+  if (!isAdmin) {
+  alert('Only admins can remove installers.')
+  return
+}
+
+  const { error } = await supabase
+    .from('installers')
+    .update({ active: false })
+    .eq('id', installerId)
+
+  if (error) {
+    alert('Installer was not removed: ' + error.message)
+    return
+  }
+
+  fetchInstallers()
+}
+
+const startEditInstaller = (installer: Installer) => {
+  setEditingInstallerId(installer.id)
+  setEditInstallerName(installer.name)
+  setEditInstallerPhone(installer.phone)
+  setEditInstallerEmail(installer.email)
+}
+
+const saveInstallerEdit = async () => {
+  if (!isAdmin) {
+    alert('Only admins can edit installers.')
+    return
+  }
+
+  if (!editingInstallerId) return
+
+  if (!editInstallerName.trim()) {
+    alert('Installer name is required')
+    return
+  }
+
+  const { error } = await supabase
+    .from('installers')
+    .update({
+      name: editInstallerName.trim(),
+      phone: editInstallerPhone.trim(),
+      email: editInstallerEmail.trim().toLowerCase(),
+    })
+    .eq('id', editingInstallerId)
+
+  if (error) {
+    alert('Installer was not updated: ' + error.message)
+    return
+  }
+
+  setEditingInstallerId(null)
+  setEditInstallerName('')
+  setEditInstallerPhone('')
+  setEditInstallerEmail('')
+
+  fetchInstallers()
+}
+
+const cancelInstallerEdit = () => {
+  setEditingInstallerId(null)
+  setEditInstallerName('')
+  setEditInstallerPhone('')
+  setEditInstallerEmail('')
+}
+
+  const addInstaller = async () => {
+    if (!isAdmin) {
+  alert('Only admins can add installers.')
+  return
+}
+  if (!newInstallerName.trim()) {
+    alert('Installer name is required')
+    return
+  }
+
+  const { error } = await supabase.from('installers').insert({
+    name: newInstallerName.trim(),
+    phone: newInstallerPhone.trim(),
+    email: newInstallerEmail.trim().toLowerCase(),
+    active: true,
+  })
+
+  if (error) {
+    alert('Installer did not save: ' + error.message)
+    return
+  }
+
+  setNewInstallerName('')
+  setNewInstallerPhone('')
+  setNewInstallerEmail('')
+
+  fetchInstallers()
+}
+
+const checkAdmin = async (email: string | undefined) => {
+  if (!email) {
+    setIsAdmin(false)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('email', email.toLowerCase())
+    .eq('role', 'admin')
+    .maybeSingle()
+
+  if (error) {
+    console.error('Admin check failed:', error)
+    setIsAdmin(false)
+    return
+  }
+
+  setIsAdmin(!!data)
+}
 
   const saveJob = async () => {
     if (!company || !installer || !name.trim() || !phone.trim()) {
@@ -430,10 +584,34 @@ const filteredJobs = useMemo(() => {
         )
       : jobs
 
-  if (statusFilter === 'All') return baseJobs
+  const statusJobs =
+    statusFilter === 'All'
+      ? baseJobs
+      : baseJobs.filter((job) => job.status === statusFilter)
 
-  return baseJobs.filter((job) => job.status === statusFilter)
-}, [jobs, statusFilter, view, currentInstaller])
+  const search = jobSearch.trim().toLowerCase()
+
+  if (!search) return statusJobs
+
+  return statusJobs.filter((job) => {
+    const searchableText = [
+      job.jobName,
+      job.name,
+      job.phone,
+      job.company,
+      job.installer,
+      job.jobType,
+      job.status,
+      job.jobDate,
+      job.timeWindow,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return searchableText.includes(search)
+  })
+}, [jobs, statusFilter, view, currentInstaller, jobSearch])
 
   const getStatusStyle = (status: JobStatus) => {
     switch (status) {
@@ -493,14 +671,24 @@ const filteredJobs = useMemo(() => {
         </button>
         <button
           onClick={() => {
-            setSelectedJob(null)
+            setJobSearch('')
             setView('jobs')
           }}
         >
           View Jobs
         </button>
-        <button onClick={() => setView('myJobs')}>My Jobs</button>
+        <button
+          onClick={() => {
+            setJobSearch('')
+            setView('myJobs')
+          }}
+        >
+          My Jobs
+        </button>
         <button onClick={() => setView('dashboard')}>Dashboard</button>
+        {isAdmin && (
+          <button onClick={() => setView('installers')}>Installers</button>
+        )}
         <button onClick={logout}>Log Out</button>
       </div>
       
@@ -624,6 +812,16 @@ const filteredJobs = useMemo(() => {
       {(view === 'jobs' || view === 'myJobs') && !selectedJob && (
         <div style={{ display: 'grid', gap: 12 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+  placeholder="Search jobs..."
+  value={jobSearch}
+  onChange={(e) => setJobSearch(e.target.value)}
+  style={{
+    width: '100%',
+    padding: 10,
+    marginBottom: 10,
+  }}
+/>
             <button
               style={filterButtonStyle('All')}
               onClick={() => setStatusFilter('All')}
@@ -717,7 +915,95 @@ const filteredJobs = useMemo(() => {
           )}
         </div>
       )}
+{view === 'installers' && isAdmin && (
+  <section>
+    <h2>Installers</h2>
 
+    <input
+      placeholder="Installer Name"
+      value={newInstallerName}
+      onChange={(e) => setNewInstallerName(e.target.value)}
+      style={{ width: '100%', padding: 10, marginBottom: 10 }}
+    />
+
+    <input
+      placeholder="Phone"
+      value={newInstallerPhone}
+      onChange={(e) => setNewInstallerPhone(e.target.value)}
+      style={{ width: '100%', padding: 10, marginBottom: 10 }}
+    />
+
+    <input
+      placeholder="Email"
+      value={newInstallerEmail}
+      onChange={(e) => setNewInstallerEmail(e.target.value)}
+      style={{ width: '100%', padding: 10, marginBottom: 10 }}
+    />
+
+    <button onClick={addInstaller}>Add Installer</button>
+
+    <h3>Current Installers</h3>
+
+    {installers.length === 0 ? (
+      <p>No installers yet.</p>
+    ) : (
+      installers.map((installer) => (
+  <div
+    key={installer.id}
+    style={{
+      border: '1px solid #ddd',
+      padding: 12,
+      marginBottom: 10,
+      borderRadius: 8,
+      background: '#fff',
+    }}
+  >
+    {editingInstallerId === installer.id ? (
+      <>
+        <input
+          placeholder="Installer Name"
+          value={editInstallerName}
+          onChange={(e) => setEditInstallerName(e.target.value)}
+          style={{ width: '100%', padding: 10, marginBottom: 10 }}
+        />
+
+        <input
+          placeholder="Phone"
+          value={editInstallerPhone}
+          onChange={(e) => setEditInstallerPhone(e.target.value)}
+          style={{ width: '100%', padding: 10, marginBottom: 10 }}
+        />
+
+        <input
+          placeholder="Email"
+          value={editInstallerEmail}
+          onChange={(e) => setEditInstallerEmail(e.target.value)}
+          style={{ width: '100%', padding: 10, marginBottom: 10 }}
+        />
+
+        <button onClick={saveInstallerEdit}>Save</button>
+        <button onClick={cancelInstallerEdit}>Cancel</button>
+      </>
+    ) : (
+      <>
+        <strong>{installer.name}</strong>
+        <div>Phone: {installer.phone}</div>
+        <div>Email: {installer.email}</div>
+
+        <button onClick={() => startEditInstaller(installer)}>
+          Edit
+        </button>
+
+        <button onClick={() => removeInstaller(installer.id)}>
+          Remove
+        </button>
+      </>
+    )}
+  </div>
+))
+    )}
+  </section>
+)}
       {selectedJob && (
         <div style={{ display: 'grid', gap: 10 }}>
           <button onClick={() => setSelectedJob(null)}>Back</button>
