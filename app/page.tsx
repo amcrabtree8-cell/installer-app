@@ -501,8 +501,8 @@ Job Type: ${newJob.jobType || 'General'}`
 
     const message =
       selectedJob.jobType === 'Sales Call'
-        ? `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way for our appointment.`
-        : `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way!`
+        ? `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way for our appointment, I should arrive in approximately 30 minutes`
+        : `Hello, this is ${selectedJob.installer} from ${selectedJob.company}. I'm on my way! I should arrive in approximately 30 minutes.`
 
     openJobSms(selectedJob, message, 'On My Way Text')
   }
